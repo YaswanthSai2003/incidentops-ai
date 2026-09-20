@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="IncidentOps AI — Cloudflare-native, durable infrastructure incident triage with Workers AI, Workflows, and Durable Objects."
+    />
+    <meta name="theme-color" content="#09090b" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("incidentops.theme.v1");
+          const theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.dataset.theme = theme;
+        } catch {}
+      })();
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>IncidentOps AI · Infrastructure Incident Intelligence</title>
+  </head>
+  <body>
+    <div id="app" class="app-shell" aria-live="polite"></div>
+
+    <dialog id="incident-dialog" class="dialog">
+      <form id="incident-form" method="dialog" novalidate>
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">NEW INVESTIGATION</p>
+            <h2>Report an incident</h2>
+            <p>Use synthetic or non-sensitive evidence. Secrets are redacted again on the server.</p>
+          </div>
+          <button class="icon-button" type="button" data-close-dialog aria-label="Close dialog">×</button>
+        </div>
+
+        <div class="scenario-strip" aria-label="Example incidents">
+          <button type="button" class="scenario-chip" data-scenario="deploy">503 after deploy</button>
+          <button type="button" class="scenario-chip" data-scenario="database">DB pool saturation</button>
+          <button type="button" class="scenario-chip" data-scenario="traffic">Rate-limit storm</button>
+        </div>
+
+        <div class="form-grid two">
+          <label class="field">
+            <span>Title</span>
+            <input name="title" maxlength="100" placeholder="Checkout API returning 503 after rollout" autocomplete="off" required />
+            <small data-error-for="title"></small>
+          </label>
+          <label class="field">
+            <span>Service</span>
+            <input name="service" maxlength="60" placeholder="checkout-api" autocomplete="off" required />
+            <small data-error-for="service"></small>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Environment</span>
+          <select name="environment" required>
+            <option value="production">Production</option>
+            <option value="staging">Staging</option>
+            <option value="development">Development</option>
+          </select>
+          <small data-error-for="environment"></small>
+        </label>
+
+        <label class="field">
+          <span>Description</span>
+          <textarea name="description" rows="4" maxlength="4000" placeholder="What changed, who is affected, and what is the visible impact?" required></textarea>
+          <small data-error-for="description"></small>
+        </label>
+
+        <label class="field">
+          <span>Focused log excerpt <em>optional</em></span>
+          <textarea name="logs" rows="8" maxlength="16000" spellcheck="false" class="code-input" placeholder="2026-09-20T10:42:11Z ERROR upstream returned 503 ..."></textarea>
+          <small data-error-for="logs"></small>
+        </label>
+
+        <div class="form-note">
+          <span class="note-dot" aria-hidden="true"></span>
+          IncidentOps never executes production remediation. It produces evidence-based recommendations for human review.
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="button ghost" data-close-dialog>Cancel</button>
+          <button type="submit" class="button primary" id="create-submit">
+            <span class="button-label">Start durable investigation</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+
+    <dialog id="auth-dialog" class="dialog auth-dialog">
+      <div class="auth-shell">
+        <div class="auth-visual" aria-hidden="true">
+          <div class="auth-visual-mark">IO</div>
+          <p class="eyebrow">ACCOUNT WORKSPACE</p>
+          <h2>Keep incident memory with you.</h2>
+          <p>Sign in on another device and continue from the same durable workspace. Account metadata lives in D1; incident state stays in SQLite-backed Durable Objects.</p>
+          <div class="auth-proof-grid">
+            <div><strong>D1</strong><span>users & sessions</span></div>
+            <div><strong>DO</strong><span>incident memory</span></div>
+            <div><strong>AI</strong><span>Workers AI</span></div>
+          </div>
+        </div>
+        <div class="auth-panel">
+          <div class="dialog-head auth-head">
+            <div>
+              <p class="eyebrow">INCIDENTOPS AI</p>
+              <h2 id="auth-title">Sign in</h2>
+              <p id="auth-subtitle">Access your workspace from any device.</p>
+            </div>
+            <button class="icon-button" type="button" data-close-auth aria-label="Close account dialog">×</button>
+          </div>
+
+          <div class="auth-tabs" role="tablist" aria-label="Account action">
+            <button type="button" class="auth-tab active" role="tab" aria-selected="true" data-auth-tab="login">Sign in</button>
+            <button type="button" class="auth-tab" role="tab" aria-selected="false" data-auth-tab="signup">Create account</button>
+          </div>
+
+          <form id="login-form" class="auth-form" novalidate>
+            <label class="field">
+              <span>Email</span>
+              <input name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required />
+              <small data-auth-error-for="email"></small>
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input name="password" type="password" maxlength="128" autocomplete="current-password" placeholder="Your password" required />
+              <small data-auth-error-for="password"></small>
+            </label>
+            <button class="button primary auth-submit" type="submit"><span class="button-label">Sign in securely</span></button>
+            <p class="auth-footnote">Session tokens are stored in Secure, HttpOnly cookies and only hashed tokens are persisted server-side.</p>
+          </form>
+
+          <form id="signup-form" class="auth-form hidden" novalidate>
+            <label class="field">
+              <span>Name</span>
+              <input name="name" maxlength="60" autocomplete="name" placeholder="Your name" required />
+              <small data-auth-error-for="name"></small>
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required />
+              <small data-auth-error-for="email"></small>
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input name="password" type="password" maxlength="128" autocomplete="new-password" placeholder="At least 10 characters" required />
+              <small data-auth-error-for="password"></small>
+            </label>
+            <label class="field">
+              <span>Workspace name <em>optional</em></span>
+              <input name="workspaceName" maxlength="60" autocomplete="off" placeholder="Platform Engineering" />
+              <small data-auth-error-for="workspaceName"></small>
+            </label>
+            <div class="form-note auth-claim-note">
+              <span class="note-dot" aria-hidden="true"></span>
+              Your current demo workspace will be claimed by this account, so existing incidents stay with you.
+            </div>
+            <button class="button primary auth-submit" type="submit"><span class="button-label">Create account & secure workspace</span></button>
+            <p class="auth-footnote">Passwords are derived with PBKDF2-SHA256 and a unique salt before storage. Incident evidence never enters the account database.</p>
+          </form>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" aria-live="assertive" aria-atomic="true"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

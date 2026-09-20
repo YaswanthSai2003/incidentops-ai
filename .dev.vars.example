@@ -1,0 +1,5 @@
+# IncidentOps does not require external API keys.
+# Workers AI is accessed through the `AI` binding in wrangler.jsonc.
+#
+# Optional local-only overrides can go here. Never commit .dev.vars.
+# APP_ENV=development

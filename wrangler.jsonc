@@ -1,0 +1,50 @@
+{
+	"name": "opsagent",
+	"main": "worker/index.js",
+	"compatibility_date": "2026-09-20",
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": true
+	},
+	"ai": {
+		"binding": "AI",
+		"remote": true
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "INCIDENT_STORE",
+				"class_name": "IncidentStore"
+			}
+		]
+	},
+	"exports": {
+		"IncidentStore": {
+			"type": "durable-object",
+			"storage": "sqlite"
+		}
+	},
+	"workflows": [
+		{
+			"name": "incident-investigation",
+			"binding": "INCIDENT_WORKFLOW",
+			"class_name": "IncidentInvestigationWorkflow"
+		}
+	],
+	"vars": {
+		"MODEL_ID": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+		"APP_ENV": "production"
+	},
+	"d1_databases": [
+		{
+			"binding": "AUTH_DB",
+			"database_id": "788b0679-a16b-4e0d-9fec-937092cefeaa"
+		}
+	]
+}

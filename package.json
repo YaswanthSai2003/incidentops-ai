@@ -1,0 +1,21 @@
+{
+  "name": "incidentops-ai",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare-native durable infrastructure incident intelligence",
+  "scripts": {
+    "dev": "npx --yes wrangler@4.135.0 dev",
+    "test": "node --test tests/*.test.mjs",
+    "syntax": "node --check worker/domain.js && node --check worker/auth.js && node --check worker/store.js && node --check worker/workflow.js && node --check worker/index.js && node --check public/app.js",
+    "validate": "node scripts/validate-structure.mjs",
+    "check": "npm run syntax && npm test && npm run validate",
+    "deploy": "npm run check && npm run deploy:worker && npm run migrate:remote",
+    "types": "npx --yes wrangler@4.135.0 types",
+    "migrate:remote": "npx --yes wrangler@4.135.0 d1 migrations apply AUTH_DB --remote",
+    "deploy:worker": "npx --yes wrangler@4.135.0 deploy"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
