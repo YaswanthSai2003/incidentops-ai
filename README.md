@@ -2,7 +2,7 @@
 
 **Cloudflare-native infrastructure incident intelligence.**
 
-**Live demo:** [Live](https://opsagent.yaswanthkadhati.workers.dev)
+[**Live Demo**](https://opsagent.yaswanthkadhati.workers.dev)
 
 IncidentOps AI turns a focused incident report and log excerpt into a durable, auditable triage workflow. It was built for Cloudflare's optional Software Engineer assignment and intentionally demonstrates an LLM, durable coordination, user input, and persistent memory/state using Cloudflare-native primitives.
 
